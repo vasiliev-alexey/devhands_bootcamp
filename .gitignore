@@ -1,0 +1,5 @@
+notes/
+*/target
+**/.idea/*
+/devhands_ws/target/*
+/devhands_ws/.idea/*

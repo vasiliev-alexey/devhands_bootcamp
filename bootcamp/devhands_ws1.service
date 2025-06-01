@@ -1,0 +1,10 @@
+[Unit]
+Description=WS instanse 1
+
+[Service]
+Environment="APP_server__port=8091"
+WorkingDirectory=/opt/devhands_ws
+ExecStart=/opt/devhands_ws/devhands_ws
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6"></script>
+
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Результаты тестов</title>
+</head>
+
+<body>
+<!--style>
+body { display: flex; flex-wrap: wrap; justify-content: space-evenly; }
+div { flex-basis: 45%; margin-top: 20px; }
+</style-->
+
+<h2>Тест angie</h2>
+
+<details>
+    <summary>Конфигурация</summary>
+
+    <pre>
+
+worker_processes auto;
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        location / {
+            root   /usr/share/angie/html;
+            index  index.html index.htm;
+        }
+
+        error_page  500 502 503 504 /50x.html;
+        location = /50x.html {
+            root   /usr/share/nginx/html;
+        }
+    }
+}
+
+
+</pre>
+
+</details>
+
+<div id="angie"></div>
+
+<h2>Тест вебсервиса без нагрузки</h2>
+<p>для сервиса используем 6 потоков</p>
+
+<details>
+    <summary>Конфигурация сервиса /opt/devhands_ws/config/default.toml</summary>
+
+    <pre>
+
+[server]
+host = "127.0.0.1"
+port = 8088
+workers = 6
+
+[database]
+url = "postgres://user:pass@localhost/dbname"
+max_connections = 5
+
+[logging]
+level = "info"
+
+    </pre>
+
+</details>
+
+
+<div id="lt"></div>
+
+<h2>Тест веб сервиса с задержкой в 10ms в 6 потоков с шагом RPS 1000</h2>
+
+<div id="lt100_div"></div>
+<h2>Тест веб сервиса с задержкой в 10ms в 6 потоков с шагом RPS 10 в диапазоне RPS от 450 до 550</h2>
+<div id="lt_step_10"></div>
+
+
+<details>
+
+    <summary>Скрипт нагрузки</summary>
+
+    <pre>
+#!/bin/bash
+
+# Параметры нагрузки
+CONCURRENCY=10       # -c
+THREADS=2            # -t
+DURATION=60          # -d
+#URL="http://localhost:8091"
+#URL="http://localhost"
+URL=http://localhost:8091/cpu-load?delay_ms=10
+
+
+# Диапазон RPS
+START_RPS=440
+END_RPS=550
+STEP_RPS=10
+
+# Время сна
+SLEEP_TIME=30
+
+# Цикл по RPS
+for (( rps=$START_RPS; rps<=$END_RPS; rps+=$STEP_RPS ))
+do
+    echo "Запуск нагрузки с RPS: $rps C $CONCURRENCY T $THREADS R $rps D ${DURATION}s "
+    OUTPUT_FILE="results_${rps}.log"
+        wrk -c$CONCURRENCY -t$THREADS -R$rps -d${DURATION}s -L $URL > "$OUTPUT_FILE" 2>&1
+    sleep  $SLEEP_TIME    
+    echo "----------------------------------------"
+done
+</pre>
+
+</details>
+
+
+<div id="bar"></div>
+
+<p>Итог — при задержке в работе сервиса в 10 миллисекунд потоках точка насыщения производительности равна 490 RPS, что
+    соответствует 81.5% от максимума 600 (1000/10*6)</p>
+<script type=module>
+
+
+    var mydata_10 = [
+
+        /*  стрельбы с шагом в 10 RPS в диапазоне RPS от 450 до 550 и задержкой сервиса в 10ms */
+        {Test: "lt_step_10", R: 440, rps: 439.95, l: 46.81},
+        {Test: "lt_step_10", R: 450, rps: 449.93, l: 21.44},
+        {Test: "lt_step_10", R: 460, rps: 459.93, l: 38.43},
+        {Test: "lt_step_10", R: 470, rps: 469.92, l: 24.46},
+        {Test: "lt_step_10", R: 480, rps: 479.90, l: 39.74},
+        {Test: "lt_step_10", R: 490, rps: 489.89, l: 48.26},
+        {Test: "lt_step_10", R: 500, rps: 493.64, l: 1060.00},
+        {Test: "lt_step_10", R: 510, rps: 494.98, l: 2240.00},
+        {Test: "lt_step_10", R: 520, rps: 496.21, l: 3480.00},
+        {Test: "lt_step_10", R: 530, rps: 499.07, l: 4390.00},
+        {Test: "lt_step_10", R: 540, rps: 500.14, l: 5600.00},
+        {Test: "lt_step_10", R: 550, rps: 501.93, l: 6620.00}
+    ]
+
+    var mydata_100 = [
+
+        /*  стрельбы с шагом RPS в 100 и ри задержкой сервиса в 10ms */
+
+        {Test: "lt_step_100", R: 100, rps: 100.01, l: 17.38},
+        {Test: "lt_step_100", R: 200, rps: 200.00, l: 46.43},
+        {Test: "lt_step_100", R: 300, rps: 299.97, l: 18.69},
+        {Test: "lt_step_100", R: 400, rps: 399.95, l: 29.58},
+        {Test: "lt_step_100", R: 500, rps: 493.52, l: 1060.00},
+        {Test: "lt_step_100", R: 600, rps: 512.95, l: 11020.00},
+        {Test: "lt_step_100", R: 700, rps: 532.62, l: 17940.00},
+        {Test: "lt_step_100", R: 800, rps: 552.29, l: 23270.00},
+        {Test: "lt_step_100", R: 900, rps: 572.95, l: 27310.00},
+        {Test: "lt_step_100", R: 1000, rps: 586.99, l: 30620.00},
+        {Test: "lt_step_100", R: 1100, rps: 587.75, l: 33260.00},
+        {Test: "lt_step_100", R: 1200, rps: 587.50, l: 35520.00},
+        {Test: "lt_step_100", R: 1300, rps: 587.05, l: 37390.00},
+        {Test: "lt_step_100", R: 1400, rps: 586.95, l: 39030.00},
+        {Test: "lt_step_100", R: 1500, rps: 587.43, l: 40400.00},
+        {Test: "lt_step_100", R: 1600, rps: 587.79, l: 41620.00},
+        {Test: "lt_step_100", R: 1700, rps: 586.98, l: 42730.00},
+        {Test: "lt_step_100", R: 1800, rps: 586.61, l: 43680.00},
+        {Test: "lt_step_100", R: 1900, rps: 587.55, l: 44530.00},
+        {Test: "lt_step_100", R: 2000, rps: 588.32, l: 45290.00},
+
+    ]
+
+    var mydata = [
+
+
+        {Test: "angie", R: 5000, rps: 4999.17, l: 34.62},
+        {Test: "angie", R: 10000, rps: 9998.11, l: 29.44},
+        {Test: "angie", R: 15000, rps: 14997.00, l: 54.24},
+        {Test: "angie", R: 20000, rps: 19996.46, l: 44.16},
+        {Test: "angie", R: 25000, rps: 24994.97, l: 21.57},
+        {Test: "angie", R: 30000, rps: 29994.60, l: 39.52},
+        {Test: "angie", R: 35000, rps: 34993.49, l: 53.09},
+        {Test: "angie", R: 40000, rps: 39992.79, l: 105.60},
+        {Test: "angie", R: 45000, rps: 44992.24, l: 532.99},
+        {Test: "angie", R: 50000, rps: 49990.31, l: 111.10},
+        {Test: "angie", R: 55000, rps: 54990.25, l: 143.10},
+        {Test: "angie", R: 60000, rps: 59952.99, l: 500.73},
+        {Test: "angie", R: 65000, rps: 64978.13, l: 685.57},
+        {Test: "angie", R: 70000, rps: 64390.07, l: 6030.00},
+        {Test: "angie", R: 75000, rps: 66295.16, l: 8500.00},
+        {Test: "angie", R: 80000, rps: 72697.29, l: 7070.00},
+        {Test: "angie", R: 85000, rps: 73847.30, l: 9320.00},
+        {Test: "angie", R: 90000, rps: 67604.46, l: 15660.00},
+        {Test: "angie", R: 95000, rps: 66360.27, l: 19420.00},
+        {Test: "angie", R: 100000, rps: 67144.24, l: 20350.00},
+        {Test: "angie", R: 105000, rps: 73303.17, l: 19630.00},
+        {Test: "angie", R: 110000, rps: 72282.21, l: 21610.00},
+        {Test: "angie", R: 115000, rps: 67929.93, l: 25070.00},
+        {Test: "angie", R: 120000, rps: 69159.34, l: 26510.00},
+        {Test: "angie", R: 125000, rps: 69102.01, l: 27530.00},
+        {Test: "angie", R: 130000, rps: 67499.95, l: 29920.00},
+        {Test: "angie", R: 135000, rps: 71443.42, l: 29080.00},
+        {Test: "angie", R: 140000, rps: 69950.93, l: 30950.00},
+        {Test: "angie", R: 145000, rps: 68853.70, l: 32110.00},
+        {Test: "angie", R: 150000, rps: 67658.07, l: 33160.00},
+        {Test: "angie", R: 155000, rps: 64695.13, l: 35550.00},
+        {Test: "angie", R: 160000, rps: 69417.24, l: 34800.00},
+        {Test: "angie", R: 165000, rps: 68486.27, l: 36010.00},
+        {Test: "angie", R: 170000, rps: 67502.24, l: 36440.00},
+        {Test: "angie", R: 175000, rps: 64642.58, l: 38240.00},
+        {Test: "angie", R: 180000, rps: 70410.51, l: 37490.00},
+        {Test: "angie", R: 185000, rps: 67428.56, l: 39120.00},
+        {Test: "angie", R: 190000, rps: 67230.90, l: 39120.00},
+        {Test: "angie", R: 195000, rps: 68471.99, l: 39160.00},
+        {Test: "angie", R: 200000, rps: 75315.75, l: 37810.00},
+
+        /*простой нагрузочный тест сервиса*/
+
+        {Test: "lt", R: 5000, rps: 4999.18, l: 48.00},
+        {Test: "lt", R: 10000, rps: 9998.15, l: 38.14},
+        {Test: "lt", R: 15000, rps: 14997.25, l: 48.32},
+        {Test: "lt", R: 20000, rps: 19996.00, l: 33.57},
+        {Test: "lt", R: 25000, rps: 24995.36, l: 45.63},
+        {Test: "lt", R: 30000, rps: 29994.03, l: 42.14},
+        {Test: "lt", R: 35000, rps: 34993.08, l: 45.38},
+        {Test: "lt", R: 40000, rps: 39992.84, l: 7.29},
+        {Test: "lt", R: 45000, rps: 44991.19, l: 31.38},
+        {Test: "lt", R: 50000, rps: 49991.27, l: 25.22},
+        {Test: "lt", R: 55000, rps: 54988.70, l: 43.20},
+        {Test: "lt", R: 60000, rps: 59987.65, l: 34.17},
+        {Test: "lt", R: 65000, rps: 64988.42, l: 20.82},
+        {Test: "lt", R: 70000, rps: 69986.84, l: 34.27},
+        {Test: "lt", R: 75000, rps: 74986.37, l: 58.05},
+        {Test: "lt", R: 80000, rps: 79977.27, l: 41.15},
+        {Test: "lt", R: 85000, rps: 84984.85, l: 82.82},
+        {Test: "lt", R: 90000, rps: 89842.74, l: 483.07},
+        {Test: "lt", R: 95000, rps: 94582.43, l: 632.32},
+        {Test: "lt", R: 100000, rps: 99935.64, l: 1040.00},
+        {Test: "lt", R: 105000, rps: 104250.87, l: 915.46},
+        {Test: "lt", R: 110000, rps: 108571.04, l: 1560.00},
+        {Test: "lt", R: 115000, rps: 112038.48, l: 4430.00},
+        {Test: "lt", R: 120000, rps: 111796.59, l: 8060.00},
+        {Test: "lt", R: 125000, rps: 117627.82, l: 6220.00},
+        {Test: "lt", R: 130000, rps: 113445.13, l: 9660.00},
+        {Test: "lt", R: 135000, rps: 114512.27, l: 10350.00},
+        {Test: "lt", R: 140000, rps: 117636.68, l: 14390.00},
+        {Test: "lt", R: 145000, rps: 119986.61, l: 11610.00},
+        {Test: "lt", R: 150000, rps: 123784.70, l: 14020.00},
+        {Test: "lt", R: 155000, rps: 117923.05, l: 19140.00},
+        {Test: "lt", R: 160000, rps: 112064.95, l: 20270.00},
+        {Test: "lt", R: 165000, rps: 116232.90, l: 19430.00},
+        {Test: "lt", R: 170000, rps: 121317.75, l: 18730.00},
+        {Test: "lt", R: 175000, rps: 117493.16, l: 21790.00},
+        {Test: "lt", R: 180000, rps: 117713.50, l: 22380.00},
+        {Test: "lt", R: 185000, rps: 120566.90, l: 24330.00},
+        {Test: "lt", R: 190000, rps: 124491.52, l: 23230.00},
+        {Test: "lt", R: 195000, rps: 125365.91, l: 23950.00},
+        {Test: "lt", R: 200000, rps: 122455.67, l: 25690.00},
+    ];
+
+
+    const angie = Plot.plot({
+        marginTop: 30, marginRight: 30, marginBottom: 40, marginLeft: 50,
+
+        color: {legend: true, domain: ["angie"], range: ["orange", "darkblue", "darkgreen"]},
+        grid: true,
+        x: {label: "RPS (x5000)"},
+        y: {label: "Latency"},
+        inset: 10,
+
+        marks: [
+            Plot.ruleY([0]),
+            Plot.lineY(mydata, {x: "rps", y: "l", stroke: "Test"}),
+            Plot.dot(mydata, {x: "rps", y: "l", r: 2, fill: "#000", stroke: "Test"}),
+        ]
+    })
+
+
+    const lt = Plot.plot({
+        marginTop: 30, marginRight: 30, marginBottom: 40, marginLeft: 50,
+
+        color: {legend: true, domain: ["lt"], range: ["orange", "darkblue", "darkgreen"]},
+        grid: true,
+        x: {label: "RPS (x5000)"},
+        y: {label: "Latency"},
+        inset: 10,
+
+        marks: [
+            Plot.ruleY([0]),
+            Plot.lineY(mydata, {x: "rps", y: "l", stroke: "Test"}),
+            Plot.dot(mydata, {x: "rps", y: "l", r: 2, fill: "#000", stroke: "Test"}),
+        ]
+    })
+
+    const lt_100 = Plot.plot({
+        marginTop: 30, marginRight: 30, marginBottom: 40, marginLeft: 50,
+
+        color: {legend: true, domain: ["lt_step_100"], range: ["orange", "darkblue", "darkgreen"]},
+        grid: true,
+        x: {label: "RPS (x100)"},
+        y: {label: "Latency"},
+        inset: 10,
+
+        marks: [
+            Plot.ruleY([0]),
+            Plot.lineY(mydata_100, {x: "rps", y: "l", stroke: "Test"}),
+            Plot.dot(mydata_100, {x: "rps", y: "l", r: 2, fill: "#00", stroke: "Test"}),
+        ]
+    })
+
+    const lt_10 = Plot.plot({
+        marginTop: 30, marginRight: 30, marginBottom: 40, marginLeft: 50,
+
+        color: {legend: true, domain: ["lt_step_10"], range: ["orange", "darkblue", "darkgreen"]},
+        grid: true,
+        x: {label: "RPS (x100)"},
+        y: {label: "Latency"},
+        inset: 10,
+
+        marks: [
+            Plot.ruleY([0]),
+            Plot.lineY(mydata_10, {x: "rps", y: "l", stroke: "Test"}),
+            Plot.dot(mydata_10, {x: "rps", y: "l", r: 2, fill: "#00", stroke: "Test"}),
+        ]
+    })
+
+
+    const div = document.querySelector("#angie");
+    const lt_div = document.querySelector("#lt");
+    const lt100_div = document.querySelector("#lt100_div");
+    const lt_step_10_div = document.querySelector("#lt_step_10");
+
+    div.append(angie);
+    lt_div.append(lt);
+    lt100_div.append(lt_100);
+    lt_step_10_div.append(lt_10)
+
+
+</script>
+</body>
+</body></html>
