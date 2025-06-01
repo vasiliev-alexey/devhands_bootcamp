@@ -1,0 +1,11 @@
+[server]
+host = "127.0.0.1"
+port = 8088
+workers = 6
+
+[database]
+url = "postgres://user:pass@localhost/dbname"
+max_connections = 5
+
+[logging]
+level = "info"
